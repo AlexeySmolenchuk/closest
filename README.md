@@ -1,10 +1,19 @@
 # closest
+
 ### Description
 Arnold Shader similar to **xyzdist** VEX function and **ClosestPointOnMesh** Maya command.
 
 Shader uses **Houdini** functionality via HDK calls.
 
 **op:** syntax can be used to sample mesh directly from rendered ass ( for example: *op:/obj/geo* )
+
+### Usage
+You can sample minimum distance to mesh, position or attribute.
+Simple example. Displace by sin of distance.
+
+![Displacement Example](/images/displace_sin_distance.jpg)
+
+![Network Example](/images/network_example.jpg)
 
 ### Features
 Feature | distance | P | PrimAttrib | PointAttrib | VertexAttrib
