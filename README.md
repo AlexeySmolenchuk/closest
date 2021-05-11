@@ -30,3 +30,9 @@ Lniux and Windows scripts provided. You need:
 - Download and specify **ARNOLD_ROOT** path to Arnold SDK
 - Specify **HFS** path to Houdini instalation
 - On Windows: specify **MSVCDir** path
+
+### Special thanks to:
+
+Vladimir Tsypliashchuk
+
+Dmitry Shurov
