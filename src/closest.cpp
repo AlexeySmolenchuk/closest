@@ -42,7 +42,6 @@ node_loader
     
    if (i > 0)
    {
-        AiMsgWarning("[closest] Loaded false case");
       return false;
 
    }
@@ -73,11 +72,9 @@ struct ShaderData
 node_initialize
 {
     ShaderData *data = new ShaderData;
-
     AiNodeSetLocalData(node, data);
-    //AiMsgWarning("[closest] node initialized %s", AiNodeGetStr(node, "name"));
 
-    GU_Detail::loadIODSOs();    // Ensure all plugins are loaded
+    GU_Detail::loadIODSOs();// Ensure all plugins are loaded
 }
 
 
@@ -120,7 +117,6 @@ node_update
             if (mymesh)
             {
 
-
                 // AtParamIterator *iter = AiNodeEntryGetParamIterator(AiNodeGetNodeEntry(mymesh));
                 // while (!AiParamIteratorFinished(iter))
                 // {
@@ -145,8 +141,6 @@ node_update
 
                 data->mesh_matrix = AiM4Invert(AiNodeGetMatrix (mymesh, "matrix"));
 
-                //std::cout << ">>>> " << matrix << std::endl;
-
                 //fill gdp  from arnold node
                 int num_points = AiArrayGetNumElements(vlist);
 
@@ -156,7 +150,6 @@ node_update
                 for (int i=0; i<num_points; i++){
                     AtVector p = AiArrayGetVec(vlist, i);
                     positions[i].assign(p.x, p.y, p.z);
-                    //std::cout << ">>>> " << positions[i] << std::endl;
                 }
 
                 GEO_PolyCounts polygonsizes;
@@ -164,8 +157,6 @@ node_update
                     polygonsizes.append(AiArrayGetInt(nsides, i), 1);
 
                 }
-                // std::cout << ">>>> " << polygonsizes.getNumPolygons() << std::endl;
-                // std::cout << ">>>> " << polygonsizes.getNumVertices() << std::endl;
 
                 UT_IntArray polygonpointnumbers;
                 polygonpointnumbers.setSize(AiArrayGetNumElements(vidxs));
@@ -187,10 +178,6 @@ node_update
             else
             {
                 AiMsgWarning("[closest] %s Loading Failed", filename);
-                // std::cout << errors->size() << std::endl;
-                // for (int i=0; i<errors->size(); i++){
-                //     std::cout << i << std::endl;
-                // }
             }
             data->mesh_matrix = AiM4Identity();
         }
@@ -261,7 +248,7 @@ shader_evaluate
             // Special case for Position 
             if (strcmp(AiShaderEvalParamStr(p_attribute), "P")==0)
             {
-                // Need remap for Packed
+                // TODO: remap for Packed
                 // result = UT_Vector4(min_info.u1, min_info.v1, min_info.w1, 0);
 
                 if (min_info.prim.isClosed())
@@ -315,9 +302,8 @@ shader_evaluate
                     }
                     
                     // Do the weighted average.
-                    //GA_AttributeOwner owner = normalattrib->getOwner();
-                    result=0;
-                    //sg->out.RGB() = AtRGB(0,1,0);
+
+                    result = 0;
                     for (exint i = 0; i < offsetarray.size(); ++i)
                     {
                         // try to read vector attribute
@@ -342,19 +328,13 @@ shader_evaluate
                                 result += weightarray(i) * handle_f.get(offset);
                                 
                             }
-
-
                         }
-
                     }
-
                 }
-
             }
-
         }
 
-        sg->out.RGB() = AtRGB(result.x(),result.y(),result.z());
+        sg->out.RGB() = AtRGB(result.x(), result.y(), result.z());
     }
     else
     {
