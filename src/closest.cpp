@@ -121,14 +121,14 @@ node_update
             {
 
 
-                AtParamIterator *iter = AiNodeEntryGetParamIterator(AiNodeGetNodeEntry(mymesh));
-                while (!AiParamIteratorFinished(iter))
-                {
-                   const AtParamEntry   *parm = AiParamIteratorGetNext(iter);
-                   // do something with node ...
-                   std::cout << "!!!! " << AiParamGetName(parm) << " " << AiParamGetTypeName(AiParamGetType(parm)) << std::endl;
-                }
-                AiParamIteratorDestroy(iter);
+                // AtParamIterator *iter = AiNodeEntryGetParamIterator(AiNodeGetNodeEntry(mymesh));
+                // while (!AiParamIteratorFinished(iter))
+                // {
+                //    const AtParamEntry   *parm = AiParamIteratorGetNext(iter);
+                //    // do something with node ...
+                //    std::cout << "!!!! " << AiParamGetName(parm) << " " << AiParamGetTypeName(AiParamGetType(parm)) << std::endl;
+                // }
+                // AiParamIteratorDestroy(iter);
 
                 // AtParamIterator *iter = AiNodeEntryGetParamIterator(AiNodeGetNodeEntry(mymesh));
                 // while (!AiParamIteratorFinished(iter))
