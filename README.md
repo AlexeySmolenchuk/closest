@@ -22,7 +22,7 @@ Polymesh External File | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_
 Polyline External File | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark:
 Packed External File | :heavy_check_mark:
 Alembic External File | :heavy_check_mark: 
-Polymesh Object | :heavy_check_mark: | :heavy_check_mark:
+Polymesh Object | :heavy_check_mark: | :heavy_check_mark:| | :heavy_check_mark: | :heavy_check_mark:
 Polyline Object |
 
 ### Build
