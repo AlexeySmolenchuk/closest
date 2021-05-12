@@ -43,14 +43,12 @@ node_loader
    if (i > 0)
    {
       return false;
-
    }
    node->methods     = SimpleMethods;
    node->output_type = AI_TYPE_RGB;
    node->name        = "closest";
    node->node_type   = AI_NODE_SHADER;
    strcpy(node->version, AI_VERSION);
-   AiMsgWarning("Loaded true case");
    return true;
 }
 
@@ -135,9 +133,9 @@ node_update
                 // }
                 // AiParamIteratorDestroy(iter);
 
-                AtArray* vlist = AiNodeGetArray (mymesh, "vlist");
-                AtArray* nsides = AiNodeGetArray (mymesh, "nsides");
-                AtArray* vidxs = AiNodeGetArray (mymesh, "vidxs");
+                AtArray *vlist = AiNodeGetArray (mymesh, "vlist");
+                AtArray *nsides = AiNodeGetArray (mymesh, "nsides");
+                AtArray *vidxs = AiNodeGetArray (mymesh, "vidxs");
 
                 data->mesh_matrix = AiM4Invert(AiNodeGetMatrix (mymesh, "matrix"));
 
@@ -147,26 +145,125 @@ node_update
                 UT_Array<UT_Vector3> positions;
                 positions.setSize(num_points);
 
-                for (int i=0; i<num_points; i++){
+                for (int i=0; i<num_points; i++)
+                {
                     AtVector p = AiArrayGetVec(vlist, i);
                     positions[i].assign(p.x, p.y, p.z);
                 }
 
                 GEO_PolyCounts polygonsizes;
-                for (int i=0; i<AiArrayGetNumElements(nsides); i++){
+                for (int i=0; i<AiArrayGetNumElements(nsides); i++)
+                {
                     polygonsizes.append(AiArrayGetInt(nsides, i), 1);
-
                 }
 
                 UT_IntArray polygonpointnumbers;
                 polygonpointnumbers.setSize(AiArrayGetNumElements(vidxs));
 
-                for (int i=0; i<AiArrayGetNumElements(vidxs); i++){
+                for (int i=0; i<AiArrayGetNumElements(vidxs); i++)
+                {
                     polygonpointnumbers[i] = AiArrayGetInt(vidxs, i);
                 }
 
                 GEO_PrimPoly::buildBlock(my_geo, positions.array() , num_points, polygonsizes, polygonpointnumbers.array(), true);
 
+                // read Attribute from ASS
+                AtString attrName = AiNodeGetStr(node, "attribute");
+                if ((AiNodeGetInt(node, "mode")==1)&&(strcmp(attrName, "P")!=0))
+                {
+                    
+                    AtArray *attr = AiNodeGetArray (mymesh, attrName);
+                    // std::cout << AiArrayGetNumElements(attr)<< std::endl;
+                    // std::cout <<AiParamGetTypeName(AiArrayGetType (attr))<< std::endl;
+                    // std::cout <<AiParamGetTypeSize(AiArrayGetType (attr))<< std::endl;
+
+                    const AtUserParamEntry *userparm = AiNodeLookUpUserParameter(mymesh, attrName);
+                    // std::cout << AiUserParamGetName(userparm)<< std::endl;
+                    // std::cout << int(AiUserParamGetType(userparm))<< std::endl;
+                    // std::cout << int(AiUserParamGetArrayType(userparm))<< std::endl;
+                    // std::cout << (int)AiUserParamGetCategory(userparm) << std::endl;
+
+
+                    switch(AiUserParamGetCategory(userparm))
+                    {
+                        case AI_USERDEF_VARYING:
+                        {
+                            GA_RWHandleV3 cdh;
+                            cdh = GA_RWHandleV3(my_geo->addFloatTuple(GA_ATTRIB_POINT, attrName.c_str(), 3, GA_Defaults(0.0)));
+                            switch(AiUserParamGetType(userparm))
+                            {
+                                case AI_TYPE_RGB:
+                                {
+                                    for (int i=0; i<num_points; i++)
+                                    {
+                                        AtRGB val = AiArrayGetRGB(attr, i);
+                                        cdh.set(GA_Offset(i), UT_Vector3(val.r, val.g, val.b));
+                                    }
+                                    break;
+                                }
+                                case AI_TYPE_VECTOR:
+                                {
+                                    for (int i=0; i<num_points; i++)
+                                    {
+                                        AtVector val = AiArrayGetVec(attr, i);
+                                        cdh.set(GA_Offset(i), UT_Vector3(val.x, val.y, val.z));
+                                    }
+                                    break;
+                                }
+                                case AI_TYPE_FLOAT:
+                                {
+                                    for (int i=0; i<num_points; i++)
+                                    {
+                                        cdh.set(GA_Offset(i), UT_Vector3(AiArrayGetFlt(attr, i)));
+                                    }
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                        case AI_USERDEF_INDEXED:
+                        {
+                            char idxs_name[32];
+                            sprintf(idxs_name, "%sidxs", attrName.c_str());
+                            AtArray *attr_idx = AiNodeGetArray (mymesh,  idxs_name );
+
+                            GA_RWHandleV3 cdh;
+                            cdh = GA_RWHandleV3(my_geo->addFloatTuple(GA_ATTRIB_VERTEX, attrName.c_str(), 3, GA_Defaults(0.0)));
+
+                            int num_vertices = AiArrayGetNumElements(attr_idx);
+                            switch(AiUserParamGetType(userparm))
+                            {
+                                case AI_TYPE_RGB:
+                                {
+                                    for (int i=0; i<num_vertices; i++)
+                                    {
+                                        AtRGB val = AiArrayGetRGB(attr, AiArrayGetInt(attr_idx, i));
+                                        cdh.set(GA_Offset(i), UT_Vector3(val.r, val.g, val.b));
+                                    }
+                                    break;
+                                }
+                                case AI_TYPE_VECTOR:
+                                {
+                                    for (int i=0; i<num_vertices; i++)
+                                    {
+                                        AtVector val = AiArrayGetVec(attr, AiArrayGetInt(attr_idx, i));
+                                        cdh.set(GA_Offset(i), UT_Vector3(val.x, val.y, val.z));
+                                    }
+                                    break;
+                                }
+                                case AI_TYPE_FLOAT:
+                                {
+                                    for (int i=0; i<num_vertices; i++)
+                                    {
+                                        cdh.set(GA_Offset(i), UT_Vector3(AiArrayGetFlt(attr, AiArrayGetInt(attr_idx, i))));
+                                    }
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
             }
             else AiMsgWarning("[closest] %s Loading Failed", filename);
                 
@@ -174,7 +271,9 @@ node_update
         else //try to read from file
         {
             if (my_geo->load(filename).success())
-                AiMsgWarning("[closest] %s Loaded", filename);
+            {
+                //AiMsgWarning("[closest] %s Loaded", filename);
+            }
             else
             {
                 AiMsgWarning("[closest] %s Loading Failed", filename);
