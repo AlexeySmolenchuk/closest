@@ -183,7 +183,6 @@ node_update
                     // std::cout << int(AiUserParamGetArrayType(userparm))<< std::endl;
                     // std::cout << (int)AiUserParamGetCategory(userparm) << std::endl;
 
-
                     switch(AiUserParamGetCategory(userparm))
                     {
                         case AI_USERDEF_VARYING:
@@ -264,6 +263,7 @@ node_update
                         }
                     }
                 }
+            AiMsgInfo("[closest] %s Loaded", filename);
             }
             else AiMsgWarning("[closest] %s Loading Failed", filename);
                 
@@ -272,7 +272,7 @@ node_update
         {
             if (my_geo->load(filename).success())
             {
-                //AiMsgWarning("[closest] %s Loaded", filename);
+                AiMsgInfo("[closest] %s Loaded", filename);
             }
             else
             {
