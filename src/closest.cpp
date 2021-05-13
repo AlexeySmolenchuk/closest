@@ -167,103 +167,151 @@ node_update
 
                 GEO_PrimPoly::buildBlock(my_geo, positions.array() , num_points, polygonsizes, polygonpointnumbers.array(), true);
 
+
                 // read Attribute from ASS
                 AtString attrName = AiNodeGetStr(node, "attribute");
+
                 if ((AiNodeGetInt(node, "mode")==1)&&(strcmp(attrName, "P")!=0))
                 {
                     
-                    AtArray *attr = AiNodeGetArray (mymesh, attrName);
-                    // std::cout << AiArrayGetNumElements(attr)<< std::endl;
-                    // std::cout <<AiParamGetTypeName(AiArrayGetType (attr))<< std::endl;
-                    // std::cout <<AiParamGetTypeSize(AiArrayGetType (attr))<< std::endl;
-
-                    const AtUserParamEntry *userparm = AiNodeLookUpUserParameter(mymesh, attrName);
-                    // std::cout << AiUserParamGetName(userparm)<< std::endl;
-                    // std::cout << int(AiUserParamGetType(userparm))<< std::endl;
-                    // std::cout << int(AiUserParamGetArrayType(userparm))<< std::endl;
-                    // std::cout << (int)AiUserParamGetCategory(userparm) << std::endl;
-
-                    switch(AiUserParamGetCategory(userparm))
+                    // predefined attributes (uv, N)
+                    if (strcmp(attrName, "uv")==0)
                     {
-                        case AI_USERDEF_VARYING:
+                        AtArray *uvlist = AiNodeGetArray (mymesh, "uvlist");
+                        AtArray *uvidxs = AiNodeGetArray (mymesh, "uvidxs");
+
+                        if (AiArrayGetNumElements(uvlist))
                         {
-                            GA_RWHandleV3 cdh;
-                            cdh = GA_RWHandleV3(my_geo->addFloatTuple(GA_ATTRIB_POINT, attrName.c_str(), 3, GA_Defaults(0.0)));
-                            switch(AiUserParamGetType(userparm))
+                            GA_RWHandleV3 handle;
+                            handle = GA_RWHandleV3(my_geo->addFloatTuple(GA_ATTRIB_VERTEX, "uv", 3, GA_Defaults(0.0)));
+
+                            int num_vertices = AiArrayGetNumElements(uvidxs);
+                            for (int i=0; i<num_vertices; i++)
                             {
-                                case AI_TYPE_RGB:
-                                {
-                                    for (int i=0; i<num_points; i++)
-                                    {
-                                        AtRGB val = AiArrayGetRGB(attr, i);
-                                        cdh.set(GA_Offset(i), UT_Vector3(val.r, val.g, val.b));
-                                    }
-                                    break;
-                                }
-                                case AI_TYPE_VECTOR:
-                                {
-                                    for (int i=0; i<num_points; i++)
-                                    {
-                                        AtVector val = AiArrayGetVec(attr, i);
-                                        cdh.set(GA_Offset(i), UT_Vector3(val.x, val.y, val.z));
-                                    }
-                                    break;
-                                }
-                                case AI_TYPE_FLOAT:
-                                {
-                                    for (int i=0; i<num_points; i++)
-                                    {
-                                        cdh.set(GA_Offset(i), UT_Vector3(AiArrayGetFlt(attr, i)));
-                                    }
-                                    break;
-                                }
+                                AtVector2 val = AiArrayGetVec2(uvlist, AiArrayGetInt(uvidxs, i));
+                                handle.set(GA_Offset(i), UT_Vector3(val.x, val.y, 0));
                             }
-                            break;
                         }
-                        case AI_USERDEF_INDEXED:
+                    }
+                    else if(strcmp(attrName, "N")==0)
+                    {
+                        AtArray *nlist = AiNodeGetArray (mymesh, "nlist");
+                        AtArray *nidxs = AiNodeGetArray (mymesh, "nidxs");
+
+                        if (AiArrayGetNumElements(nlist))
                         {
-                            char idxs_name[32];
-                            sprintf(idxs_name, "%sidxs", attrName.c_str());
-                            AtArray *attr_idx = AiNodeGetArray (mymesh,  idxs_name );
+                            GA_RWHandleV3 handle;
+                            handle = GA_RWHandleV3(my_geo->addFloatTuple(GA_ATTRIB_VERTEX, "N", 3, GA_Defaults(0.0)));
 
-                            GA_RWHandleV3 cdh;
-                            cdh = GA_RWHandleV3(my_geo->addFloatTuple(GA_ATTRIB_VERTEX, attrName.c_str(), 3, GA_Defaults(0.0)));
-
-                            int num_vertices = AiArrayGetNumElements(attr_idx);
-                            switch(AiUserParamGetType(userparm))
+                            int num_vertices = AiArrayGetNumElements(nidxs);
+                            for (int i=0; i<num_vertices; i++)
                             {
-                                case AI_TYPE_RGB:
-                                {
-                                    for (int i=0; i<num_vertices; i++)
-                                    {
-                                        AtRGB val = AiArrayGetRGB(attr, AiArrayGetInt(attr_idx, i));
-                                        cdh.set(GA_Offset(i), UT_Vector3(val.r, val.g, val.b));
-                                    }
-                                    break;
-                                }
-                                case AI_TYPE_VECTOR:
-                                {
-                                    for (int i=0; i<num_vertices; i++)
-                                    {
-                                        AtVector val = AiArrayGetVec(attr, AiArrayGetInt(attr_idx, i));
-                                        cdh.set(GA_Offset(i), UT_Vector3(val.x, val.y, val.z));
-                                    }
-                                    break;
-                                }
-                                case AI_TYPE_FLOAT:
-                                {
-                                    for (int i=0; i<num_vertices; i++)
-                                    {
-                                        cdh.set(GA_Offset(i), UT_Vector3(AiArrayGetFlt(attr, AiArrayGetInt(attr_idx, i))));
-                                    }
-                                    break;
-                                }
+                                AtVector val = AiArrayGetVec(nlist, AiArrayGetInt(nidxs, i));
+                                handle.set(GA_Offset(i), UT_Vector3(val.x, val.y, val.z));
                             }
-                            break;
+                        }
+                    }
+                    else // custom attribute
+                    {
+                        AtArray *attr = AiNodeGetArray (mymesh, attrName);
+                        // std::cout << AiArrayGetNumElements(attr)<< std::endl;
+                        // std::cout <<AiParamGetTypeName(AiArrayGetType (attr))<< std::endl;
+                        // std::cout <<AiParamGetTypeSize(AiArrayGetType (attr))<< std::endl;
+
+                        const AtUserParamEntry *userparm = AiNodeLookUpUserParameter(mymesh, attrName);
+                        // std::cout << AiUserParamGetName(userparm)<< std::endl;
+                        // std::cout << int(AiUserParamGetType(userparm))<< std::endl;
+                        // std::cout << int(AiUserParamGetArrayType(userparm))<< std::endl;
+                        // std::cout << (int)AiUserParamGetCategory(userparm) << std::endl;
+
+                        // Attribute category (prim/point/vertex)
+                        switch(AiUserParamGetCategory(userparm))
+                        {
+                            // point attributes
+                            case AI_USERDEF_VARYING:
+                            {
+                                GA_RWHandleV3 handle;
+                                handle = GA_RWHandleV3(my_geo->addFloatTuple(GA_ATTRIB_POINT, attrName.c_str(), 3, GA_Defaults(0.0)));
+                                // Attrib type float/vector/color
+                                switch(AiUserParamGetType(userparm))
+                                {
+                                    case AI_TYPE_RGB:
+                                    {
+                                        for (int i=0; i<num_points; i++)
+                                        {
+                                            AtRGB val = AiArrayGetRGB(attr, i);
+                                            handle.set(GA_Offset(i), UT_Vector3(val.r, val.g, val.b));
+                                        }
+                                        break;
+                                    }
+                                    case AI_TYPE_VECTOR:
+                                    {
+                                        for (int i=0; i<num_points; i++)
+                                        {
+                                            AtVector val = AiArrayGetVec(attr, i);
+                                            handle.set(GA_Offset(i), UT_Vector3(val.x, val.y, val.z));
+                                        }
+                                        break;
+                                    }
+                                    case AI_TYPE_FLOAT:
+                                    {
+                                        for (int i=0; i<num_points; i++)
+                                        {
+                                            handle.set(GA_Offset(i), UT_Vector3(AiArrayGetFlt(attr, i)));
+                                        }
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                            // vertex Attributes
+                            case AI_USERDEF_INDEXED:
+                            {
+                                char idxs_name[32];
+                                sprintf(idxs_name, "%sidxs", attrName.c_str());
+                                AtArray *attr_idx = AiNodeGetArray (mymesh,  idxs_name );
+
+                                GA_RWHandleV3 handle;
+                                handle = GA_RWHandleV3(my_geo->addFloatTuple(GA_ATTRIB_VERTEX, attrName.c_str(), 3, GA_Defaults(0.0)));
+
+                                int num_vertices = AiArrayGetNumElements(attr_idx);
+                                switch(AiUserParamGetType(userparm))
+                                {
+                                    case AI_TYPE_RGB:
+                                    {
+                                        for (int i=0; i<num_vertices; i++)
+                                        {
+                                            AtRGB val = AiArrayGetRGB(attr, AiArrayGetInt(attr_idx, i));
+                                            handle.set(GA_Offset(i), UT_Vector3(val.r, val.g, val.b));
+                                        }
+                                        break;
+                                    }
+                                    case AI_TYPE_VECTOR:
+                                    {
+                                        for (int i=0; i<num_vertices; i++)
+                                        {
+                                            AtVector val = AiArrayGetVec(attr, AiArrayGetInt(attr_idx, i));
+                                            handle.set(GA_Offset(i), UT_Vector3(val.x, val.y, val.z));
+                                        }
+                                        break;
+                                    }
+                                    case AI_TYPE_FLOAT:
+                                    {
+                                        for (int i=0; i<num_vertices; i++)
+                                        {
+                                            handle.set(GA_Offset(i), UT_Vector3(AiArrayGetFlt(attr, AiArrayGetInt(attr_idx, i))));
+                                        }
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
                         }
                     }
                 }
+
             AiMsgInfo("[closest] %s Loaded", filename);
+                  
             }
             else AiMsgWarning("[closest] %s Loading Failed", filename);
                 
