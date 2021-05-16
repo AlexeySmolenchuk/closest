@@ -20,8 +20,8 @@ Feature | distance | P | PrimAttrib | PointAttrib | VertexAttrib
 ---|:---:|:---:|:---:|:---:|:---:
 Polymesh External File | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark:
 Polyline External File | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark:
-Packed External File | :heavy_check_mark:
-Alembic External File | :heavy_check_mark: 
+Packed External File | :heavy_check_mark: | :heavy_check_mark:
+Alembic External File | :heavy_check_mark:  | :heavy_check_mark:
 Polymesh Object | :heavy_check_mark: | :heavy_check_mark:| | :heavy_check_mark: | :heavy_check_mark:
 Polyline Object |
 
