@@ -359,7 +359,7 @@ node_update
 
 node_finish
 {
-    AiMsgWarning("[closest] finished");
+    AiMsgInfo("[closest] finished");
 }
  
 
@@ -392,20 +392,31 @@ shader_evaluate
         }
         else if(mode==1)
         {
+            GA_PrimitiveTypeId type = min_info.prim->getTypeId();
             // Special case for Position 
             if (strcmp(AiShaderEvalParamStr(p_attribute), "P")==0)
             {
-                // TODO: remap for Packed
-                // result = UT_Vector4(min_info.u1, min_info.v1, min_info.w1, 0);
+                // std::cout << min_info.prim->getTypeName() << std::endl;
+                //std::cout << min_info.prim->getTypeDef().getLabel().c_str() << std::endl;
+                //std::cout << min_info.prim->getTypeId().get() << std::endl;
 
-                if (min_info.prim.isClosed())
-                {
-                    min_info.prim->evaluateInteriorPoint(result, min_info.u1, min_info.v1);
-                }
-                else
+                // PackedGeometry and PackedAlembic
+                // if ((type==24) || (type==29))
+                // {
+                //     //result = UT_Vector4(min_info.u1, min_info.v1, min_info.w1, 0);
+                //     min_info.prim->evaluateInteriorPoint(result, min_info.u1, min_info.v1, min_info.w1);
+                //     //min_info.prim->evaluateInteriorPoint(result, min_info.u1, min_info.v1);
+                // }
+                // else 
+                
+                if ((type==GA_PRIMPOLY) && !min_info.prim.isClosed())
                 {
                     // Normalize Polyline parametrization
                     min_info.prim->evaluatePoint(result, min_info.u1/(min_info.prim->getVertexCount()-1));
+                }
+                else
+                {
+                    min_info.prim->evaluateInteriorPoint(result, min_info.u1, min_info.v1, min_info.w1);
                 }
             }
             else
@@ -438,15 +449,16 @@ shader_evaluate
                     UT_Array<GA_Offset> offsetarray;
                     UT_FloatArray weightarray;
 
-                    if (min_info.prim.isClosed())
-                    {
-                        min_info.prim->computeInteriorPointWeights(offsetarray, weightarray, min_info.u1, min_info.v1, 0);
-                    }
-                    else
+                    if ((type==GA_PRIMPOLY) && !min_info.prim.isClosed())
                     {
                         // Normalize Polyline parametrization
                         min_info.prim->computeInteriorPointWeights(offsetarray, weightarray, min_info.u1/(min_info.prim->getVertexCount()-1), 0, 0);
                     }
+                    else
+                    {
+                        min_info.prim->computeInteriorPointWeights(offsetarray, weightarray, min_info.u1, min_info.v1, min_info.w1);
+                    }
+
                     
                     // Do the weighted average.
 
