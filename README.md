@@ -5,7 +5,12 @@ Arnold Shader similar to **xyzdist** VEX function and **ClosestPointOnMesh** May
 
 Shader uses **Houdini** functionality via HDK calls.
 
-**op:** syntax can be used to sample mesh directly from rendered ass ( for example: *op:/obj/geo* )
+**op:** syntax can be used to sample mesh directly from rendered ass ( for example: *op:/obj/geo* ).
+This option works fine in interactive session. For batch render you need to specify **-ipr** flag
+
+`
+kick example.ass -ipr -dp -dw
+`
 
 ### Usage
 You can sample minimum distance to mesh, position or attribute.
