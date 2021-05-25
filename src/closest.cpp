@@ -61,18 +61,23 @@ struct ShaderData
 };
 
 
-// node_plugin_initialize
-// {
-//     AiMsgWarning("[closest] plugin initialized");
-//     return true;
-// }
+node_plugin_initialize
+{
+    GU_Detail::loadIODSOs();// Ensure all plugins are loaded
+    AiMsgInfo("[closest] loaded");
+    return true;
+}
 
 node_initialize
 {
     ShaderData *data = new ShaderData;
     AiNodeSetLocalData(node, data);
 
-    GU_Detail::loadIODSOs();// Ensure all plugins are loaded
+    // AtNode *mymesh = AiNodeLookUpByName("/obj/testgeometry_squab1/polygons");
+    // AiMsgInfo("[closest] npt %s", AiNodeGetName(mymesh));
+    // AtArray *vlist = AiNodeGetArray (mymesh, "vlist");  
+    // int num_points = AiArrayGetNumElements(vlist);
+    // AiMsgInfo("[closest] npt %s", num_points);
 }
 
 
@@ -105,13 +110,26 @@ node_update
             // {
             //    AtNode *node = AiNodeIteratorGetNext(iter);
             //    // do something with node ...
-            //    std::cout << "!!!! " << AiNodeGetName(node) << std::endl;
+            //    AiMsgInfo("[closest] nodename %s", AiNodeGetName(node));
             // }
             // AiNodeIteratorDestroy(iter);
-            
+
             std::string nodename = std::string(filename).substr(3);
             AtNode *mymesh = AiNodeLookUpByName((nodename+"/polygons").c_str());
             
+            // const AtNodeEntry *entry = AiNodeGetNodeEntry(mymesh);
+            // std::cout << AiNodeEntryGetName(entry) << std::endl;
+
+            // std::cout << "METADATA" << std::endl;
+            // AtMetaDataIterator *iter = AiNodeEntryGetMetaDataIterator(entry);
+            // while (!AiMetaDataIteratorFinished(iter))
+            // {
+            //     const AtMetaDataEntry *entry = AiMetaDataIteratorGetNext(iter);
+            //     std::cout << entry->param << std::endl;
+            // }
+            // AiMetaDataIteratorDestroy(iter);
+
+
             if (mymesh)
             {
 
@@ -124,24 +142,29 @@ node_update
                 // }
                 // AiParamIteratorDestroy(iter);
 
-                // AtParamIterator *iter = AiNodeEntryGetParamIterator(AiNodeGetNodeEntry(mymesh));
-                // while (!AiParamIteratorFinished(iter))
+                // AtUserParamIterator *iter = AiNodeGetUserParamIterator(mymesh);
+                // while (!AiUserParamIteratorFinished(iter))
                 // {
-                //    const AtParamEntry   *parm = AiParamIteratorGetNext(iter);
+                //    const AtUserParamEntry   *parm = AiUserParamIteratorGetNext(iter);
                 //    // do something with node ...
-                //    std::cout << "!!!! " << AiParamGetName(parm) << " " << AiParamGetTypeName(AiParamGetType(parm)) << std::endl;
+                //    std::cout << "!!!! " << AiUserParamGetName(parm) << " " << AiParamGetTypeName(AiUserParamGetType(parm)) << std::endl;
                 // }
-                // AiParamIteratorDestroy(iter);
+                // AiUserParamIteratorDestroy(iter);
 
-                AtArray *vlist = AiNodeGetArray (mymesh, "vlist");
-                AtArray *nsides = AiNodeGetArray (mymesh, "nsides");
-                AtArray *vidxs = AiNodeGetArray (mymesh, "vidxs");
+                const AtArray *vlist = AiNodeGetArray (mymesh, "vlist");
+                const AtArray *nsides = AiNodeGetArray (mymesh, "nsides");
+                const AtArray *vidxs = AiNodeGetArray (mymesh, "vidxs");
+
+                // std::cout << AiArrayGetNumElements(vlist) << std::endl;
+                // std::cout << AiArrayGetNumElements(nsides) << std::endl;
+                // std::cout << AiArrayGetNumElements(vidxs) << std::endl;
+
 
                 data->mesh_matrix = AiM4Invert(AiNodeGetMatrix (mymesh, "matrix"));
 
                 //fill gdp  from arnold node
                 int num_points = AiArrayGetNumElements(vlist);
-
+                
                 UT_Array<UT_Vector3> positions;
                 positions.setSize(num_points);
 
@@ -370,7 +393,7 @@ shader_evaluate
     ShaderData *data = (ShaderData*)AiNodeGetLocalData(node);
     int mode = AiShaderEvalParamInt(p_mode);
 
-    if ((mode==1)&&(data->attrib==nullptr)&&(strcmp(AiShaderEvalParamStr(p_attribute), "P")!=0)) return;
+    if ((mode==1)&&(data->attrib==nullptr)&&(strcmp(AiShaderEvalParamStr(p_attribute), "P")!=0)&&(strcmp(AiShaderEvalParamStr(p_attribute), "st")!=0)) return;
 
     AtVector P;
     P = AiM4PointByMatrixMult (data->mesh_matrix, sg->P);
@@ -393,8 +416,8 @@ shader_evaluate
         else if(mode==1)
         {
             GA_PrimitiveTypeId type = min_info.prim->getTypeId();
-            // Special case for Position 
-            if (strcmp(AiShaderEvalParamStr(p_attribute), "P")==0)
+            // Special case for parametric coordinates
+            if (strcmp(AiShaderEvalParamStr(p_attribute), "st")==0)
             {
                 // std::cout << min_info.prim->getTypeName() << std::endl;
                 //std::cout << min_info.prim->getTypeDef().getLabel().c_str() << std::endl;
@@ -408,6 +431,23 @@ shader_evaluate
                 //     //min_info.prim->evaluateInteriorPoint(result, min_info.u1, min_info.v1);
                 // }
                 // else 
+                
+                if ((type==GA_PRIMPOLY) && !min_info.prim.isClosed())
+                {
+                    // Normalize Polyline parametrization
+                    result = UT_Vector4(min_info.u1/(min_info.prim->getVertexCount()-1), sqrt(min_info.d), min_info.prim->calcPerimeter());
+                }
+                else if((type==GA_PRIMNURBCURVE) || (type==GA_PRIMBEZCURVE))
+                {
+                    result = UT_Vector4(min_info.u1, sqrt(min_info.d), min_info.prim->calcPerimeter());
+                }
+                else
+                {
+                    result = UT_Vector4(min_info.u1, min_info.v1, min_info.w1, 0);
+                }
+            }
+            else if (strcmp(AiShaderEvalParamStr(p_attribute), "P")==0)
+            {
                 
                 if ((type==GA_PRIMPOLY) && !min_info.prim.isClosed())
                 {
